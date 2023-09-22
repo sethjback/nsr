@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/nats-io/nats.go v1.29.0
+	github.com/segmentio/ksuid v1.0.4
 	go.uber.org/zap v1.26.0
 )
 

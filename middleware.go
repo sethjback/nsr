@@ -1,21 +1,30 @@
 package nsr
 
 import (
+	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 )
 
 type Middleware func(next Handler) Handler
 
-type SLogger struct {
-	Logger *zap.SugaredLogger
-}
+func Logger(l *zap.SugaredLogger) Middleware {
+	if l == nil {
+		pl, _ := zap.NewProduction()
+		l = pl.Sugar()
+	}
 
-func (sl *SLogger) Handler(next Handler) Handler {
-	return func(w ResponseWriter, r *Request) error {
-		sl.Logger.Infow("handling message on subject %s")
-		if err := next(w, r); err != nil {
-			sl.Logger.Infow("error: %s", err.Error())
+	return func(next Handler) Handler {
+		return func(w ResponseWriter, r *Request) error {
+			requestID := ksuid.New()
+			l.Info("handling request", "id", requestID, "subject", r.Subject)
+			err := next(w, r)
+
+			if err != nil {
+				l.Warnw("request finished", "id", requestID, "error", err)
+			} else {
+				l.Infow("request finished", "id", requestID)
+			}
+			return err
 		}
-		return nil
 	}
 }
